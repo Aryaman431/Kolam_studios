@@ -279,7 +279,7 @@ export const KolamEditor: React.FC = () => {
 						</div>
 					</div>
 
-					<div className="mb-8 grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-10">
+					<div className="mb-8 grid grid-cols-1 gap-8">
 						<div>
 							<p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--accent-muted)]">
 								Grid
@@ -308,28 +308,6 @@ export const KolamEditor: React.FC = () => {
 							<p className="mt-2 text-xs text-[var(--ink)]/40">Between 3 and 15.</p>
 						</div>
 
-						<div>
-							<p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--accent-muted)]">
-								Draw-on duration
-							</p>
-							<div className="flex flex-wrap gap-2">
-								{animationPresets.map((preset) => (
-									<button
-										type="button"
-										key={preset}
-										onClick={() => setAnimationSpeed(preset)}
-										className={`rounded-full px-4 py-2 text-xs font-semibold tabular-nums tracking-wide transition ${
-											animationSpeed === preset ? 'btn-metal-chip-on' : 'btn-metal text-[var(--ink)]'
-										}`}
-									>
-										{speedToDuration(preset) / 1000}s
-									</button>
-								))}
-							</div>
-							<p className="mt-2 text-xs text-[var(--ink)]/40">
-								Full reveal: {(animationDuration / 1000).toFixed(1)}s
-							</p>
-						</div>
 					</div>
 
 					<div className="flex justify-center border-t border-[color:var(--border-soft)] pt-7">
