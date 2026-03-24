@@ -72,7 +72,7 @@ export const KolamHistory: React.FC = () => {
 								In Tamil Nadu, kolams are not merely decorative—they are integral to the daily lives of communities. Every home, temple, and
 								public space displays kolams as expressions of cultural identity and spiritual devotion. The practice connects generations,
 								with mothers teaching daughters the intricate techniques passed down through centuries. Today, kolams have transcended
-								geographic boundaries, gaining recognition as a UNESCO-listed Intangible Cultural Heritage of Humanity, celebrating India's
+								geographic boundaries, gaining recognition as a UNESCO-listed Intangible Cultural Heritage of Humanity, celebrating India&apos;s
 								rich artistic and spiritual legacy.
 							</p>
 						</div>

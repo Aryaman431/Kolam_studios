@@ -1,4 +1,4 @@
-import { CurvePoint, KolamPattern, Point } from '@/types/kolam';
+import { KolamPattern } from '@/types/kolam';
 import { generateSVGPath } from '@/utils/svgPathGenerator';
 
 export interface SVGOptions {
@@ -11,7 +11,6 @@ export function generateKolamSVG(pattern: KolamPattern, options: SVGOptions = {}
 	const {
 		background = '#fef3c7',
 		brush = '#92400e',
-		padding = 40,
 	} = options;
 
 	const { dimensions, dots, curves } = pattern;

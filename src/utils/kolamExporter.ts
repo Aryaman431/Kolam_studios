@@ -123,7 +123,7 @@ export class KolamExporter {
 			(el as HTMLElement).style.opacity = '1';
 		});
 
-		return new Promise((resolve, _) => {
+		return new Promise((resolve) => {
 			gif.on('finished', resolve);
 			gif.render();
 		});
