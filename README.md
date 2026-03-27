@@ -224,6 +224,7 @@ Inspired by traditional South Indian Kolam art.
 
 ---
 
-## ⭐ Support
+## Deployment 
 
-If you like this project, give it a star ⭐
+The project is deployed using vercel: 
+https://kolam-studios.vercel.app/
