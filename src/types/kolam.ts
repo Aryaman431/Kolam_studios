@@ -29,7 +29,8 @@ export interface GridCell {
 }
 
 export interface KolamGrid {
-	size: number; // n x n grid
+	width: number;
+	height: number;
 	cells: GridCell[][];
 	cellSpacing: number;
 }

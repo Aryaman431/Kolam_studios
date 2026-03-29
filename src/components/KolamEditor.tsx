@@ -4,7 +4,7 @@ import { Footer } from '@/components/Footer';
 import { KolamPattern } from '@/types/kolam';
 import { KolamExporter } from '@/utils/kolamExporter';
 import { KolamGenerator } from '@/utils/kolamGenerator';
-import { durationToSpeed, generateEmbedURL, speedToDuration, updateURL, useKolamURLParams } from '@/utils/urlParams';
+import { generateEmbedURL, updateURL, useKolamURLParams } from '@/utils/urlParams';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { KolamDisplay } from './KolamDisplay';
 
@@ -16,19 +16,14 @@ export const KolamEditor: React.FC = () => {
 	const kolamRef = useRef<HTMLDivElement>(null);
 
 	const urlParams = useKolamURLParams();
-	const [size, setSize] = useState(urlParams.size);
-	const [animationSpeed, setAnimationSpeed] = useState(durationToSpeed(urlParams.duration));
-	const [animationDuration, setAnimationDuration] = useState(urlParams.duration);
+	const [width, setWidth] = useState(urlParams.width);
+	const [height, setHeight] = useState(urlParams.height);
+	const animationDuration = urlParams.duration;
 	const initialAutoAnimate = urlParams.initialAutoAnimate;
 
 	useEffect(() => {
-		updateURL({ size, duration: animationDuration, initialAutoAnimate });
-	}, [size, animationDuration, initialAutoAnimate]);
-
-	useEffect(() => {
-		const newDuration = speedToDuration(animationSpeed);
-		setAnimationDuration(newDuration);
-	}, [animationSpeed]);
+		updateURL({ width, height, duration: animationDuration, initialAutoAnimate });
+	}, [width, height, animationDuration, initialAutoAnimate]);
 
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -50,14 +45,9 @@ export const KolamEditor: React.FC = () => {
 		}
 	}, [animationState, currentPattern, animationDuration]);
 
-	const getAnimationTiming = (speed: number) => {
-		return speedToDuration(speed);
-	};
-	const animationPresets = [2, 4, 6, 8, 10];
-
 	const generatePattern = useCallback(() => {
 		try {
-			const pattern = KolamGenerator.generateKolam1D(size);
+			const pattern = KolamGenerator.generateKolam(width, height);
 			setCurrentPattern(pattern);
 			setAnimationState('stopped');
 
@@ -71,7 +61,7 @@ export const KolamEditor: React.FC = () => {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			alert(`Error generating pattern: ${errorMessage}`);
 		}
-	}, [size, initialAutoAnimate]);
+	}, [width, height, initialAutoAnimate]);
 
 	useEffect(() => {
 		generatePattern();
@@ -143,7 +133,8 @@ export const KolamEditor: React.FC = () => {
 
 		try {
 			const embedURL = generateEmbedURL({
-				size,
+				width,
+				height,
 				background: '#080809',
 				brush: '#ffffff',
 			});
@@ -185,7 +176,7 @@ export const KolamEditor: React.FC = () => {
 									pattern={currentPattern}
 									animate={animationState === 'playing'}
 									animationState={animationState}
-									animationTiming={getAnimationTiming(animationSpeed)}
+									animationTiming={animationDuration}
 									className="kolam-main"
 								/>
 							</div>
@@ -282,30 +273,60 @@ export const KolamEditor: React.FC = () => {
 					<div className="mb-8 grid grid-cols-1 gap-8">
 						<div>
 							<p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.28em] text-[var(--accent-muted)]">
-								Grid
+								Grid Dimensions
 							</p>
-							<div className="flex items-center gap-2">
-								<button
-									type="button"
-									onClick={() => setSize((prev) => Math.max(3, prev - 1))}
-									className="btn-metal flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg leading-none"
-									aria-label="Decrease grid size"
-								>
-									−
-								</button>
-								<div className="min-w-[5.5rem] flex-1 rounded-2xl border border-[color:var(--border-soft)] bg-[var(--floor)] py-2.5 text-center text-sm font-medium tabular-nums text-[var(--accent-bright)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-									{size} × {size}
+							<div className="flex items-center gap-6">
+								<div className="flex flex-col items-center gap-2">
+									<label className="text-xs text-[var(--ink)]/60">Width</label>
+									<div className="flex items-center gap-2">
+										<button
+											type="button"
+											onClick={() => setWidth((prev) => Math.max(3, prev - 1))}
+											className="btn-metal flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg leading-none"
+											aria-label="Decrease width"
+										>
+											−
+										</button>
+										<div className="min-w-[3rem] rounded-2xl border border-[color:var(--border-soft)] bg-[var(--floor)] py-2.5 text-center text-sm font-medium tabular-nums text-[var(--accent-bright)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+											{width}
+										</div>
+										<button
+											type="button"
+											onClick={() => setWidth((prev) => Math.min(15, prev + 1))}
+											className="btn-metal flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg leading-none"
+											aria-label="Increase width"
+										>
+											+
+										</button>
+									</div>
 								</div>
-								<button
-									type="button"
-									onClick={() => setSize((prev) => Math.min(15, prev + 1))}
-									className="btn-metal flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg leading-none"
-									aria-label="Increase grid size"
-								>
-									+
-								</button>
+								<div className="text-lg text-[var(--ink)]/40">×</div>
+								<div className="flex flex-col items-center gap-2">
+									<label className="text-xs text-[var(--ink)]/60">Height</label>
+									<div className="flex items-center gap-2">
+										<button
+											type="button"
+											onClick={() => setHeight((prev) => Math.max(3, prev - 1))}
+											className="btn-metal flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg leading-none"
+											aria-label="Decrease height"
+										>
+											−
+										</button>
+										<div className="min-w-[3rem] rounded-2xl border border-[color:var(--border-soft)] bg-[var(--floor)] py-2.5 text-center text-sm font-medium tabular-nums text-[var(--accent-bright)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+											{height}
+										</div>
+										<button
+											type="button"
+											onClick={() => setHeight((prev) => Math.min(15, prev + 1))}
+											className="btn-metal flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-lg leading-none"
+											aria-label="Increase height"
+										>
+											+
+										</button>
+									</div>
+								</div>
 							</div>
-							<p className="mt-2 text-xs text-[var(--ink)]/40">Between 3 and 15.</p>
+							<p className="mt-2 text-xs text-[var(--ink)]/40">Between 3 and 15 for each dimension.</p>
 						</div>
 
 					</div>

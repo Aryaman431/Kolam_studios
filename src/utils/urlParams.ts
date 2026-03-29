@@ -1,7 +1,8 @@
 import { useSearchParams } from 'next/navigation';
 
 export interface KolamURLParams {
-	size: number;
+	width: number;
+	height: number;
 	duration: number; // milliseconds for animation duration (UI only)
 	background: string; // background color for API
 	brush: string; // brush/stroke color for API
@@ -12,7 +13,8 @@ export const useKolamURLParams = (): KolamURLParams => {
 	const searchParams = useSearchParams();
 
 	return {
-		size: Math.max(3, Math.min(15, parseInt(searchParams.get('size') || '7'))),
+		width: Math.max(3, Math.min(15, parseInt(searchParams.get('width') || '7'))),
+		height: Math.max(3, Math.min(15, parseInt(searchParams.get('height') || '7'))),
 		duration: Math.max(1000, Math.min(30000, parseInt(searchParams.get('duration') || '10000'))),
 		background: searchParams.get('background') || '#fef3c7',
 		brush: searchParams.get('brush') || '#92400e',
@@ -43,7 +45,8 @@ export const generateEmbedURL = (params: Partial<KolamURLParams>, baseURL?: stri
 
 	// Set default values
 	const defaults: KolamURLParams = {
-		size: 7,
+		width: 7,
+		height: 7,
 		duration: 10000, // Not used by API, but kept for interface consistency
 		background: '#fef3c7',
 		brush: '#92400e',
@@ -53,12 +56,15 @@ export const generateEmbedURL = (params: Partial<KolamURLParams>, baseURL?: stri
 	const finalParams = { ...defaults, ...params };
 
 	// Only add relevant parameters for the API
-	url.searchParams.set('size', finalParams.size.toString());
+	url.searchParams.set('width', finalParams.width.toString());
+	url.searchParams.set('height', finalParams.height.toString());
 	url.searchParams.set('background', finalParams.background);
 	url.searchParams.set('brush', finalParams.brush);
 
 	return url.toString();
-};// Convert speed (1-10) to duration in milliseconds for backward compatibility
+};
+
+// Convert speed (1-10) to duration in milliseconds for backward compatibility
 export const speedToDuration = (speed: number): number => {
 	const minMs = 7500;
 	const maxMs = 15000;

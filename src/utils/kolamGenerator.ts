@@ -421,7 +421,8 @@ export class KolamGenerator {
 
 		// Create the grid structure
 		const grid = {
-			size: Math.max(m, n),
+			width: n,
+			height: m,
 			cells: Array(m).fill(null).map((_, i) =>
 				Array(n).fill(null).map((_, j) => ({
 					row: i,
@@ -454,6 +455,50 @@ export class KolamGenerator {
 
 	/**
 	 * Main entry point - generate kolam pattern using algorithm
+	 */
+	static generateKolam(width: number, height: number): KolamPattern {
+		console.log(`🎨 Generating ${width}x${height} Kolam`);
+
+		if (width === height) {
+			// Use the original symmetric algorithm for square grids
+			return this.generateKolam1D(width);
+		} else {
+			// Use asymmetric algorithm for rectangular grids
+			const matrix = this.generateAsymmetricKolam(width, height);
+			console.log(`📊 Generated asymmetric matrix: ${matrix.length}x${matrix[0].length}`);
+
+			// Convert to visual kolam pattern using draw_kolam logic
+			const pattern = this.drawKolam(matrix);
+			console.log(`✅ Created asymmetric kolam with ${pattern.dots.length} dots and ${pattern.curves.length} curves`);
+
+			return pattern;
+		}
+	}
+
+	/**
+	 * Generate asymmetric kolam pattern for rectangular grids
+	 */
+	private static generateAsymmetricKolam(width: number, height: number): number[][] {
+		// For asymmetric designs, we'll generate a simpler pattern
+		// that fills the grid with random valid curve patterns
+		const matrix: number[][] = [];
+
+		for (let row = 0; row < height; row++) {
+			matrix[row] = [];
+			for (let col = 0; col < width; col++) {
+				// For each cell, choose a random pattern that fits
+				// For simplicity, we'll use patterns 1-16 randomly
+				// In a more sophisticated implementation, we could consider
+				// connectivity constraints between adjacent cells
+				matrix[row][col] = Math.floor(Math.random() * 16) + 1;
+			}
+		}
+
+		return matrix;
+	}
+
+	/**
+	 * Main entry point - generate kolam pattern using algorithm (legacy for square grids)
 	 */
 	static generateKolam1D(size: number): KolamPattern {
 		console.log(`🎨 Generating 1D Kolam of size ${size}`);

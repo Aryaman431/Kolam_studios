@@ -7,12 +7,13 @@ export async function GET(request: NextRequest) {
 		const { searchParams } = new URL(request.url);
 
 		// Parse parameters with defaults
-		const size = Math.max(3, Math.min(15, parseInt(searchParams.get('size') || '7')));
+		const width = Math.max(3, Math.min(15, parseInt(searchParams.get('width') || '7')));
+		const height = Math.max(3, Math.min(15, parseInt(searchParams.get('height') || '7')));
 		const background = searchParams.get('background') || '#7b3306'; // amber-900
 		const brush = searchParams.get('brush') || '#ffffff'; // white
 
 		// Generate the kolam pattern
-		const pattern = KolamGenerator.generateKolam1D(size);
+		const pattern = KolamGenerator.generateKolam(width, height);
 
 		// Generate SVG using the utility function
 		const svgContent = generateKolamSVG(pattern, {
