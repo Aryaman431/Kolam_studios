@@ -55,6 +55,8 @@ export interface Dot {
 export interface KolamPattern {
 	id: string;
 	name: string;
+	level?: number;
+	orientation?: 'square' | 'diamond';
 	grid: KolamGrid;
 	curves: Line[]; // Generated from grid patterns
 	dots: Dot[];

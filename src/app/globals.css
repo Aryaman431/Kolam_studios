@@ -70,7 +70,8 @@ body {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-size: 0.8125rem;
-  transition: filter 0.2s ease, box-shadow 0.2s ease;
+  transition: filter 0.1s ease, box-shadow 0.2s ease;
+  
 }
 
 .btn-metal-primary:hover:not(:disabled) {

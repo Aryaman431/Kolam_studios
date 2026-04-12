@@ -1,5 +1,5 @@
 // Kolam generator for traditional South Indian geometric patterns
-import { KOLAM_CURVE_PATTERNS } from '@/data/kolamPatterns';
+import { KOLAM_CURVE_PATTERNS, SYMMETRY_TRANSFORMS } from '@/data/kolamPatterns';
 import { CurvePoint, Dot, KolamPattern, Line } from '@/types/kolam';
 
 export class KolamGenerator {
@@ -38,6 +38,15 @@ export class KolamGenerator {
 	// v_self=find(v_inv==1:16);
 	private static readonly v_self = this.findSelfInverse(this.v_inv);
 
+	private static readonly simplePatterns = [1, 2, 3, 5, 10, 11, 12, 16];
+	private static readonly mediumPatterns = [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 16];
+	private static readonly complexPatterns = Array.from({ length: 16 }, (_, index) => index + 1);
+	private static readonly densePatterns = KOLAM_CURVE_PATTERNS.filter(p => p.hasDownConnection || p.hasRightConnection).map(p => p.id);
+	private static readonly bothConnectorPatterns = KOLAM_CURVE_PATTERNS.filter(p => p.hasDownConnection && p.hasRightConnection).map(p => p.id);
+	private static readonly rotation90 = SYMMETRY_TRANSFORMS.rotation90;
+	private static readonly rotationSelf = this.findSelfInverse(this.rotation90);
+	private static readonly diagonalSelf = this.intersect(this.h_self, this.v_self);
+
 	/**
 	 * Find self-inverse elements: find(h_inv==1:16)
 	 */
@@ -64,6 +73,36 @@ export class KolamGenerator {
 	private static randomChoice(arr: number[]): number {
 		if (arr.length === 0) return 1;  // Default fallback
 		return arr[Math.floor(Math.random() * arr.length)];
+	}
+
+	private static weightedChoice(arr: number[], weightFn: (item: number) => number): number {
+		if (arr.length === 0) return 1;
+		const weighted: number[] = [];
+		for (const item of arr) {
+			const weight = Math.max(1, Math.min(6, weightFn(item)));
+			for (let i = 0; i < weight; i++) {
+				weighted.push(item);
+			}
+		}
+		return this.randomChoice(weighted);
+	}
+
+	private static hasLeftConnection(patternId: number): boolean {
+		const mirror = this.horizontalMirror(patternId);
+		return KOLAM_CURVE_PATTERNS[mirror - 1]?.hasRightConnection ?? false;
+	}
+
+	private static hasUpConnection(patternId: number): boolean {
+		const mirror = this.verticalMirror(patternId);
+		return KOLAM_CURVE_PATTERNS[mirror - 1]?.hasDownConnection ?? false;
+	}
+
+	private static rotate90(patternId: number): number {
+		return this.rotation90[patternId - 1];
+	}
+
+	private static rotate270(patternId: number): number {
+		return this.rotate90(this.rotate90(this.rotate90(patternId)));
 	}
 
 	/**
@@ -356,12 +395,16 @@ export class KolamGenerator {
 	/**
 	 * Literal translation of draw_kolam.m coordinate conversion
 	 */
-	static drawKolam(M: number[][]): KolamPattern {
-		// [m n]=size(M);
+	static drawKolam(
+		M: number[][],
+		symmetryType: KolamPattern['symmetryType'] = '1D',
+		level: number = 1,
+		orientation: KolamPattern['orientation'] = 'square'
+	): KolamPattern {
 		const m = M.length;
 		const n = M[0].length;
 
-		// M=M(end:-1:1,:); - flip vertically
+		// M=M(end:-1:1,:); - flip vertically (matches original MATLAB draw_kolam)
 		const flippedM: number[][] = [];
 		for (let i = m - 1; i >= 0; i--) {
 			flippedM[m - 1 - i] = [...M[i]];
@@ -370,56 +413,52 @@ export class KolamGenerator {
 		const dots: Dot[] = [];
 		const curves: Line[] = [];
 
-		// for i=1:m
-		//     for j=1:n
 		for (let i = 0; i < m; i++) {
 			for (let j = 0; j < n; j++) {
-				// if M(i,j)>0
 				if (flippedM[i][j] > 0) {
-					// Add dot at grid position
-					// plot(j,i,[clr '.']) - dot at grid position
+					// Dot radius and visibility per level:
+					// L1 = full size visible, L2 = small subtle, L3 = very faint
+					const dotRadius = level === 1 ? 3 : level === 2 ? 2 : 1.5;
+
 					dots.push({
 						id: `dot-${i}-${j}`,
 						center: {
 							x: (j + 1) * this.CELL_SPACING,
-							y: (i + 1) * this.CELL_SPACING
+							y: (i + 1) * this.CELL_SPACING,
 						},
-						radius: 3,
+						radius: dotRadius,
 						color: '#ffffff',
-						filled: true
+						filled: true,
 					});
 
-					// this=pt{M(i,j)};
-					// plot(j+real(this),i+imag(this),clr,'Linewidth',1.5)
-					const patternIndex = flippedM[i][j] - 1;  // Convert to 0-indexed
+					const patternIndex = flippedM[i][j] - 1;
 					if (patternIndex >= 0 && patternIndex < KOLAM_CURVE_PATTERNS.length) {
 						const pattern = KOLAM_CURVE_PATTERNS[patternIndex];
 
-						// Convert pattern coordinates: j+real(this), i+imag(this)
-						// Create a single curve with all points (keep curve grouped)
 						const curvePoints: CurvePoint[] = pattern.points.map(point => ({
-							x: ((j + 1) + point.x) * this.CELL_SPACING,  // j+real(this)
-							y: ((i + 1) + point.y) * this.CELL_SPACING,  // i+imag(this)
-							controlX: point.controlX !== undefined ?
-								((j + 1) + point.controlX) * this.CELL_SPACING : undefined,
-							controlY: point.controlY !== undefined ?
-								((i + 1) + point.controlY) * this.CELL_SPACING : undefined
+							x: ((j + 1) + point.x) * this.CELL_SPACING,
+							y: ((i + 1) + point.y) * this.CELL_SPACING,
+							controlX: point.controlX !== undefined
+								? ((j + 1) + point.controlX) * this.CELL_SPACING
+								: undefined,
+							controlY: point.controlY !== undefined
+								? ((i + 1) + point.controlY) * this.CELL_SPACING
+								: undefined,
 						}));
 
 						curves.push({
 							id: `curve-${i}-${j}`,
 							start: curvePoints[0],
 							end: curvePoints[curvePoints.length - 1],
-							curvePoints: curvePoints,
-							strokeWidth: 1.5,
-							color: '#ffffff'
+							curvePoints,
+							strokeWidth: level === 3 ? 2 : 1.5,
+							color: '#ffffff',
 						});
 					}
 				}
 			}
 		}
 
-		// Create the grid structure
 		const grid = {
 			width: n,
 			height: m,
@@ -430,86 +469,74 @@ export class KolamGenerator {
 					patternId: flippedM[i][j],
 					dotCenter: {
 						x: (j + 1) * this.CELL_SPACING,
-						y: (i + 1) * this.CELL_SPACING
-					}
+						y: (i + 1) * this.CELL_SPACING,
+					},
 				}))
 			),
-			cellSpacing: this.CELL_SPACING
+			cellSpacing: this.CELL_SPACING,
 		};
 
 		return {
 			id: `kolam-${m}x${n}`,
 			name: `Kolam ${m}×${n}`,
+			level,
+			orientation,
 			grid,
 			curves,
 			dots,
-			symmetryType: '1D',
+			symmetryType,
 			dimensions: {
 				width: (n + 1) * this.CELL_SPACING,
-				height: (m + 1) * this.CELL_SPACING
+				height: (m + 1) * this.CELL_SPACING,
 			},
 			created: new Date(),
-			modified: new Date()
+			modified: new Date(),
 		};
 	}
 
 	/**
-	 * Main entry point - generate kolam pattern using algorithm
+	 * Main entry point — generate kolam pattern for any level.
+	 *
+	 * All three levels use proposeKolam1D — the only algorithm that correctly
+	 * enforces mate_pt_dn / mate_pt_rt constraints so adjacent curves join.
+	 *
+	 * Level differences are purely cosmetic / density:
+	 *   L1 — square, dots visible, simple pattern set
+	 *   L2 — square (rotated to diamond in display), dots hidden, medium patterns, larger grid
+	 *   L3 — square (rotated to diamond in display), dots hidden, all patterns, even larger grid
 	 */
-	static generateKolam(width: number, height: number): KolamPattern {
-		console.log(`🎨 Generating ${width}x${height} Kolam`);
-
-		if (width === height) {
-			// Use the original symmetric algorithm for square grids
-			return this.generateKolam1D(width);
-		} else {
-			// Use asymmetric algorithm for rectangular grids
-			const matrix = this.generateAsymmetricKolam(width, height);
-			console.log(`📊 Generated asymmetric matrix: ${matrix.length}x${matrix[0].length}`);
-
-			// Convert to visual kolam pattern using draw_kolam logic
-			const pattern = this.drawKolam(matrix);
-			console.log(`✅ Created asymmetric kolam with ${pattern.dots.length} dots and ${pattern.curves.length} curves`);
-
-			return pattern;
-		}
-	}
-
-	/**
-	 * Generate asymmetric kolam pattern for rectangular grids
-	 */
-	private static generateAsymmetricKolam(width: number, height: number): number[][] {
-		// For asymmetric designs, we'll generate a simpler pattern
-		// that fills the grid with random valid curve patterns
-		const matrix: number[][] = [];
-
-		for (let row = 0; row < height; row++) {
-			matrix[row] = [];
-			for (let col = 0; col < width; col++) {
-				// For each cell, choose a random pattern that fits
-				// For simplicity, we'll use patterns 1-16 randomly
-				// In a more sophisticated implementation, we could consider
-				// connectivity constraints between adjacent cells
-				matrix[row][col] = Math.floor(Math.random() * 16) + 1;
-			}
+	static generateKolam(width: number, height: number, level: number = 1): KolamPattern {
+		if (level === 1) {
+			// Level 1: original path — untouched
+			return this.generateKolam1D(Math.max(width, height));
 		}
 
-		return matrix;
-	}
-
-	/**
-	 * Main entry point - generate kolam pattern using algorithm (legacy for square grids)
-	 */
-	static generateKolam1D(size: number): KolamPattern {
-		console.log(`🎨 Generating 1D Kolam of size ${size}`);
-
+		// Levels 2 & 3: larger grid, wider pattern set, diamond orientation
+		const baseSize = Math.max(width, height);
+		const size = level === 2 ? baseSize + 2 : baseSize + 4;
 		const matrix = this.proposeKolam1D(size);
-		console.log(`📊 Generated matrix: ${matrix.length}x${matrix[0].length}`);
+		const patternSet = level === 2 ? this.mediumPatterns : this.complexPatterns;
+		const remapped = matrix.map(row =>
+			row.map(id => patternSet.includes(id) ? id : patternSet[id % patternSet.length])
+		);
+		return this.drawKolam(remapped, '2D', level, 'diamond');
+	}
 
-		// Convert to visual kolam pattern using draw_kolam logic
-		const pattern = this.drawKolam(matrix);
-		console.log(`✅ Created kolam with ${pattern.dots.length} dots and ${pattern.curves.length} curves`);
+	private static horizontalMirror(patternId: number): number {
+		return this.h_inv[patternId - 1];
+	}
 
-		return pattern;
+	private static verticalMirror(patternId: number): number {
+		return this.v_inv[patternId - 1];
+	}
+
+	private static rotate180(patternId: number): number {
+		return this.horizontalMirror(this.verticalMirror(patternId));
+	}
+
+	/** Generate a Level 1 kolam (used by generateKolam and the continuous page) */
+	static generateKolam1D(size: number): KolamPattern {
+		const matrix = this.proposeKolam1D(size);
+		return this.drawKolam(matrix, '1D', 1, 'square');
 	}
 }
